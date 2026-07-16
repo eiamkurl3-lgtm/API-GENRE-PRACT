@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Http.HttpResults;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Http.HttpResults;
+using MinimalApiMovies.DTOs;
 using MinimalApiMovies.Entities;
 using MinimalApiMovies.Repositories;
 
@@ -33,20 +35,24 @@ namespace MinimalApiMovies.Endpoints
             return TypedResults.Ok(user);
         }
 
-        static async Task<Results<Created<User>, NotFound>> CreateUser(User user, IUserRepository repository)
+        static async Task<Results<Created<User>, NotFound>> CreateUser(CreateUserDTO createUserDTO, IUserRepository repository, IMapper mapper)
         {
+            var user = mapper.Map<User>(createUserDTO);
             var id = await repository.Create(user);
+            user.Id = id;
             return TypedResults.Created($"/User/{id}", user);
         }
 
 
-        static async Task<Results<Ok, NotFound, NoContent>> UpdateUser(int id, User user, IUserRepository repository)
+        static async Task<Results<Ok, NotFound, NoContent>> UpdateUser(int id, CreateUserDTO updateUserDTO, IUserRepository repository, IMapper mapper)
         {
             var exists = await repository.Exists(id);
             if (!exists)
             {
                 return TypedResults.NotFound();
             }
+            var user = mapper.Map<User>(updateUserDTO);
+            user.Id = id;
             await repository.Update(user);
             return TypedResults.Ok();
         }

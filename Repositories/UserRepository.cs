@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
 using MinimalApiMovies.Entities;
+using System.Data;
 
 namespace MinimalApiMovies.Repositories
 {
@@ -17,19 +18,23 @@ namespace MinimalApiMovies.Repositories
         {
             using var connection = new SqlConnection(connectionString);
 
-            var query = @"
-                INSERT INTO Users 
-                (FirstName, LastName, Age, Name, Gender, IsActive, PhoneNumber, Email)
-                VALUES 
-                (@FirstName, @LastName, @Age, @Name, @Gender, @IsActive, @PhoneNumber, @Email);
-
-                SELECT SCOPE_IDENTITY();
-            ";
-
-            var id = await connection.QuerySingleAsync<int>(query, user);
+            var id = await connection.QuerySingleAsync<int>(
+                "Create_User",
+                new
+                {
+                    user.FirstName,
+                    user.LastName,
+                    user.Age,
+                    user.Name,
+                    user.Gender,
+                    user.IsActive,
+                    user.PhoneNumber,
+                    user.Email
+                },
+                commandType: CommandType.StoredProcedure
+            );
 
             user.Id = id;
-
             return id;
         }
 
@@ -37,23 +42,23 @@ namespace MinimalApiMovies.Repositories
         {
             using var connection = new SqlConnection(connectionString);
 
-            var query = @"DELETE FROM Users WHERE Id = @Id";
-
-            await connection.ExecuteAsync(query, new { Id = id });
+            await connection.ExecuteAsync(
+                "User_Delete",
+                new { Id = id },
+                commandType: CommandType.StoredProcedure
+            );
         }
 
         public async Task<bool> Exists(int id)
         {
             using var connection = new SqlConnection(connectionString);
 
-            var query = @"
-                IF EXISTS (SELECT 1 FROM Users WHERE Id = @Id)
-                    SELECT 1;
-                ELSE
-                    SELECT 0;
-            ";
-
-            return await connection.QuerySingleAsync<bool>(query, new { Id = id });
+            var exists = await connection.QuerySingleAsync<bool>(
+                "User_IfExists",
+                new { Id = id },
+                commandType: CommandType.StoredProcedure
+            );
+            return exists;
         }
 
         public async Task<List<User>> GetAll()
@@ -61,7 +66,8 @@ namespace MinimalApiMovies.Repositories
             using var connection = new SqlConnection(connectionString);
 
             var users = await connection.QueryAsync<User>(
-                "SELECT * FROM Users ORDER BY FirstName"
+                "User_GetAll",
+                commandType: CommandType.StoredProcedure
             );
 
             return users.ToList();
@@ -71,31 +77,35 @@ namespace MinimalApiMovies.Repositories
         {
             using var connection = new SqlConnection(connectionString);
 
-            return await connection.QuerySingleOrDefaultAsync<User>(
-                "SELECT * FROM Users WHERE Id = @Id",
-                new { Id = id }
+            var user = await connection.QueryFirstOrDefaultAsync<User>(
+                "User_GetByID",
+                new { Id = id },
+                commandType: CommandType.StoredProcedure
             );
+
+            return user;
         }
 
         public async Task Update(User user)
         {
             using var connection = new SqlConnection(connectionString);
 
-            var query = @"
-                UPDATE Users 
-                SET 
-                    FirstName = @FirstName,
-                    LastName = @LastName,
-                    Age = @Age,
-                    Name = @Name,
-                    Gender = @Gender,
-                    IsActive = @IsActive,
-                    PhoneNumber = @PhoneNumber,
-                    Email = @Email
-                WHERE Id = @Id;
-            ";
-
-            await connection.ExecuteAsync(query, user);
+            await connection.ExecuteAsync(
+                "Update_User",
+                new
+                {
+                    user.Id,
+                    user.FirstName,
+                    user.LastName,
+                    user.Age,
+                    user.Name,
+                    user.Gender,
+                    user.IsActive,
+                    user.PhoneNumber,
+                    user.Email
+                },
+                commandType: CommandType.StoredProcedure
+            );
         }
     }
 }

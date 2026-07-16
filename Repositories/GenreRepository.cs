@@ -14,22 +14,36 @@ namespace MinimalApiMovies.Repositories
             connectionString = configuration.GetConnectionString("DefaultConnection")!;
         }
 
+        //public async Task<int> Create(Genre genre)
+        //{
+        //    using (var connection = new SqlConnection(connectionString))
+        //    {
+        //        var id = await connection.QuerySingleAsync<int>("Create_Genre",
+        //            new {genre.Name});
+        //        genre.Id = id;
+        //        return id;
+
+        //    }
+
+        //}
+
         public async Task<int> Create(Genre genre)
         {
             using (var connection = new SqlConnection(connectionString))
             {
-                var query = @"
-                    INSERT INTO Genre(Name,Description)
-                    Values(@name,@Description);
+                var id = await connection.QuerySingleAsync<int>(
+                    "Create_Genre",
+                    new
+                    {
+                        name = genre.Name,
+                        Description = genre.Description
+                    },
+                    commandType: CommandType.StoredProcedure
+                );
 
-                    SELECT SCOPE_IDENTITY()";
-
-                var id = await connection.QuerySingleAsync<int>(query, genre);
                 genre.Id = id;
                 return id;
-                
             }
-       
         }
 
         public async Task<bool> Exists(int id)
@@ -37,23 +51,17 @@ namespace MinimalApiMovies.Repositories
             using (var connection = new SqlConnection(connectionString))
             {
                 var Exists = await connection.QuerySingleAsync<bool>(
-                    @"IF EXISTS (SELECT 1 FROM Genre WHERE Id = @Id)
-                        SELECT 1;
-                    ELSE
-                        SELECT 0;",
-                    new { id });
+                    @"Genre_IfExists", new { id },commandType:CommandType.StoredProcedure);
                 return Exists;
             }
-        }
+        } 
 
         public async Task<List<Genre>> GetAll()
         {
             using (var connection = new SqlConnection(connectionString))
             {
-                var genres = await connection.QueryAsync<Genre>(
-                    @"SELECT Id, Name, Description
-                        FROM Genre
-                        ORDER BY Name");
+                var genres = await connection.QueryAsync<Genre>
+                    (@"Genre_GetAll",commandType:CommandType.StoredProcedure);
 
                 return genres.ToList();
             }
@@ -64,10 +72,8 @@ namespace MinimalApiMovies.Repositories
             using (var connection = new SqlConnection(connectionString))
             {
                 var genre = await connection.QueryFirstOrDefaultAsync<Genre>(
-                    @"SELECT Id, Name, Description
-              FROM Genre
-              WHERE Id = @Id",
-                    new { Id = id });
+                    @"Genre_GetByID",
+                    new { Id = id },commandType:CommandType.StoredProcedure);
 
                 return genre;
             }
@@ -78,10 +84,14 @@ namespace MinimalApiMovies.Repositories
             using (var connection = new SqlConnection(connectionString))
             {
                 await connection.ExecuteAsync(
-                    @"UPDATE Genre
-                        SET Name = @Name,
-                            Description = @Description
-                        WHERE Id = @Id",genre);
+                    @"Update_Genre",  new
+                    {
+                        id = genre.Id,
+                        name = genre.Name,
+                        Description = genre.Description
+                    },
+                    commandType: CommandType.StoredProcedure
+                );
             }
         }
 
@@ -90,8 +100,7 @@ namespace MinimalApiMovies.Repositories
             using (var connection = new SqlConnection(connectionString))
             {
                 await connection.ExecuteAsync(
-                    @"DELETE FROM Genre
-                        WHERE Id = @Id", new { Id = id });
+                    @"Genre_Delete", new { Id = id },commandType:CommandType.StoredProcedure);
             }
         }
     }
