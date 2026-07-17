@@ -9,6 +9,7 @@ namespace MinimalApiMovies.Mappers
         public GenreProfile()
         {
             CreateMap<CreateGenreDTO, Genre>();
+            CreateMap<Genre, GenreDTO>();
         }
     }
 }

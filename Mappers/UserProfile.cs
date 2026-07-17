@@ -9,6 +9,7 @@ namespace MinimalApiMovies.Mappers
         public UserProfile()
         {
             CreateMap<CreateUserDTO, User>();
+            CreateMap<User, UserDTO>();
         }
     }
 }

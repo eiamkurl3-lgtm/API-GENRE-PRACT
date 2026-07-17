@@ -11,6 +11,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Services zone - BEGIN
 builder.Services.AddScoped<IGenreRepository, GenreRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IActorRepository, ActorRepository>();
 
 builder.Services.AddAutoMapper(typeof(Program));
 
@@ -55,5 +56,7 @@ app.UseOutputCache();
 app.MapGroup("/Genre").MapGenreEndpoints();
 
 app.MapGroup("/User").MapUsersEndpoints();
+
+app.MapGroup("/Actor").MapActorEndpoints();
 
 app.Run();

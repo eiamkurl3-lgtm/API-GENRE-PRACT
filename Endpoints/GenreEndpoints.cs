@@ -18,28 +18,35 @@ namespace MinimalApiMovies.Endpoints
             return group;
         }
 
-        static async Task<Ok<List<Genre>>> GetAllGenres(IGenreRepository repository)
+        static async Task<Ok<List<GenreDTO>>> GetAllGenres(IGenreRepository repository, IMapper mapper)
         {
             var genres = await repository.GetAll();
-            return TypedResults.Ok(genres);
+            var genreDTOs = mapper.Map<List<GenreDTO>>(genres);
+            return TypedResults.Ok(genreDTOs);
         }
-        static async Task<Results<Ok<Genre>, NotFound>> GetGenreById(int id, IGenreRepository repository)
+
+        static async Task<Results<Ok<GenreDTO>, NotFound>> GetGenreById(int id, IGenreRepository repository, IMapper mapper)
         {
             var genre = await repository.GetById(id);
             if (genre == null)
             {
                 return TypedResults.NotFound();
             }
-            return TypedResults.Ok(genre);
+            var genreDTO = mapper.Map<GenreDTO>(genre);
+            return TypedResults.Ok(genreDTO);
         }
-        static async Task<Results<Created<Genre>, NotFound>> CreateGenre(CreateGenreDTO createGenreDTO, IGenreRepository repository, IMapper mapper)
+
+        static async Task<Results<Created<GenreDTO>, NotFound>> CreateGenre(CreateGenreDTO createGenreDTO, IGenreRepository repository, IMapper mapper)
         {
             var genre = mapper.Map<Genre>(createGenreDTO);
             var id = await repository.Create(genre);
-            return TypedResults.Created($"/Genre/{id}", genre);
+            genre.Id = id;
+            var genreDTO = mapper.Map<GenreDTO>(genre);
+            return TypedResults.Created($"/Genre/{id}", genreDTO);
         }
+
         static async Task<Results<Ok, NotFound>> UpdateGenre(int id, CreateGenreDTO createGenreDTO, IGenreRepository repository, IMapper mapper)
-        {            
+        {
             var exists = await repository.Exists(id);
             if (!exists)
             {
@@ -52,6 +59,7 @@ namespace MinimalApiMovies.Endpoints
             await repository.Update(genre);
             return TypedResults.Ok();
         }
+
         static async Task<Results<Ok, NotFound>> DeleteGenre(int id, IGenreRepository repository)
         {
             var exists = await repository.Exists(id);
@@ -62,6 +70,5 @@ namespace MinimalApiMovies.Endpoints
             await repository.Delete(id);
             return TypedResults.Ok();
         }
-
     }
 }
