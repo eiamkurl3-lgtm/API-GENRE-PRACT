@@ -1,6 +1,7 @@
 using Dapper;
 using Microsoft.Data.SqlClient;
 using MinimalApiMovies.Entities;
+using MinimalAPIsMovies.DTOs;
 using System.Data;
 
 namespace MinimalApiMovies.Repositories
@@ -8,10 +9,12 @@ namespace MinimalApiMovies.Repositories
     public class ActorRepository : IActorRepository
     {
         private readonly string connectionString;
+        private readonly HttpContext httpContext;
 
-        public ActorRepository(IConfiguration configuration)
+        public ActorRepository(IConfiguration configuration,IHttpContextAccessor httpContextAccessor)
         {
             connectionString = configuration.GetConnectionString("DefaultConnection")!;
+            httpContext = httpContextAccessor.HttpContext!;
         }
 
         public async Task<int> Create(Actor actor)
@@ -26,6 +29,7 @@ namespace MinimalApiMovies.Repositories
                     actor.LastName,
                     actor.BirthDate,
                     actor.ProfilePicture
+                    //actor.Name
                 },
                 commandType: CommandType.StoredProcedure
             );
@@ -46,14 +50,19 @@ namespace MinimalApiMovies.Repositories
             return exists;
         }
 
-        public async Task<List<Actor>> GetAll()
+        public async Task<List<Actor>> GetAll(PaginationDTO pagination)
         {
             using var connection = new SqlConnection(connectionString);
 
             var actors = await connection.QueryAsync<Actor>(
                 "Actor_GetAll",
-                commandType: CommandType.StoredProcedure
-            );
+                new { pagination.Page, pagination.RecordsPerPage },
+                commandType: CommandType.StoredProcedure);
+                
+                var actorsCount = await connection.QuerySingleAsync<int>("Actors_Count", commandType:CommandType.StoredProcedure);
+
+
+            httpContext.Response.Headers.Append("totalAmountOfRecords", actorsCount.ToString());
 
             return actors.ToList();
         }
@@ -98,6 +107,18 @@ namespace MinimalApiMovies.Repositories
                 new { Id = id },
                 commandType: CommandType.StoredProcedure
             );
+        }
+        //GetByName
+
+        public async Task<List<Actor>> GetByName(string name)
+        {
+            using var connection = new SqlConnection(connectionString);
+            var actors = await connection.QueryAsync<Actor>(
+                "Actors_GetByName",
+                new { Name = name },
+                commandType: CommandType.StoredProcedure
+            );
+            return actors.ToList();
         }
     }
 }

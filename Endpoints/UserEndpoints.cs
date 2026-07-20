@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.OutputCaching;
 using MinimalApiMovies.DTOs;
 using MinimalApiMovies.Entities;
 using MinimalApiMovies.Repositories;
@@ -18,6 +19,7 @@ namespace MinimalApiMovies.Endpoints
             return group;
         }
 
+        [OutputCache(Duration = 60)]
         static async Task<Ok<List<UserDTO>>> GetAllUsers(IUserRepository repository, IMapper mapper)
         {
             var users = await repository.GetAll();
@@ -25,6 +27,7 @@ namespace MinimalApiMovies.Endpoints
             return TypedResults.Ok(userDTOs);
         }
 
+        [OutputCache(Duration = 60)]
         static async Task<Results<Ok<UserDTO>, NotFound>> GetUserById(int id, IUserRepository repository, IMapper mapper)
         {
             var user = await repository.GetById(id);

@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.OutputCaching;
 using MinimalApiMovies.Endpoints;
 using MinimalApiMovies.Entities;
 using MinimalApiMovies.Repositories;
+using MinimalApiMovies.Services;
+using MinimalAPIsMovies.Repositories;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,6 +14,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddScoped<IGenreRepository, GenreRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IActorRepository, ActorRepository>();
+builder.Services.AddScoped<IMoviesRepository, MoviesRepository>();
+builder.Services.AddScoped<ICommentRepository, CommentRepository>();
+builder.Services.AddTransient<IFileStorage, LocalFileStorage>();
+builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddAutoMapper(typeof(Program));
 
@@ -46,6 +52,8 @@ var app = builder.Build();
 //{
 
 //}
+
+app.UseStaticFiles();
 app.UseSwagger();
 app.UseSwaggerUI();
 
@@ -58,5 +66,9 @@ app.MapGroup("/Genre").MapGenreEndpoints();
 app.MapGroup("/User").MapUsersEndpoints();
 
 app.MapGroup("/Actor").MapActorEndpoints();
+
+app.MapGroup("/Movies").MapMoviesEndpoints();
+
+app.MapGroup("/movie/{movieId:int}Comment").MapCommentEndpoints();
 
 app.Run();

@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.OutputCaching;
 using MinimalApiMovies.DTOs;
 using MinimalApiMovies.Entities;
 using MinimalApiMovies.Repositories;
@@ -18,6 +19,7 @@ namespace MinimalApiMovies.Endpoints
             return group;
         }
 
+        [OutputCache(Duration = 60)]
         static async Task<Ok<List<GenreDTO>>> GetAllGenres(IGenreRepository repository, IMapper mapper)
         {
             var genres = await repository.GetAll();
@@ -25,6 +27,7 @@ namespace MinimalApiMovies.Endpoints
             return TypedResults.Ok(genreDTOs);
         }
 
+        [OutputCache(Duration = 60)]
         static async Task<Results<Ok<GenreDTO>, NotFound>> GetGenreById(int id, IGenreRepository repository, IMapper mapper)
         {
             var genre = await repository.GetById(id);

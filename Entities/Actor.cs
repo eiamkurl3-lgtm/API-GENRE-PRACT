@@ -11,5 +11,7 @@ namespace MinimalApiMovies.Entities
         public DateTime BirthDate { get; set; }
 
         public string ProfilePicture { get; set; } = null!;
+
+        public string Name => $"{FirstName} {LastName}";
     }
 }

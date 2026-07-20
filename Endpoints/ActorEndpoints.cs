@@ -1,71 +1,118 @@
 using AutoMapper;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
 using MinimalApiMovies.DTOs;
 using MinimalApiMovies.Entities;
 using MinimalApiMovies.Repositories;
+using MinimalApiMovies.Services;
+using MinimalAPIsMovies.DTOs;
 
 namespace MinimalApiMovies.Endpoints
 {
     public static class ActorEndpoints
     {
+        private readonly static string container = "actors";
         public static RouteGroupBuilder MapActorEndpoints(this RouteGroupBuilder group)
         {
             group.MapGet("/", GetAllActors);
             group.MapGet("/{id:int}", GetActorById);
-            group.MapPost("/", CreateActores);
-            group.MapPut("/{id:int}", UpdateActor);
+            group.MapPost("/", CreateActores).DisableAntiforgery();
+            group.MapPut("/{id:int}", UpdateActor).DisableAntiforgery();
             group.MapDelete("/{id:int}", DeleteActor);
+            group.MapGet("/search/{name}", GetActorsByName);
             return group;
         }
 
-        static async Task<Ok<List<Actor>>> GetAllActors(IActorRepository repository)
+        [OutputCache(Duration = 60)]
+        static async Task<Ok<List<ActorDTO>>> GetAllActors(IActorRepository repository, IMapper mapper, int page = 1, int recordsPerPage= 10)
         {
-            var actors = await repository.GetAll();
-            return TypedResults.Ok(actors);
+            var paginationDTO = new PaginationDTO() { Page = page, RecordsPerPage = recordsPerPage };
+            var actors = await repository.GetAll(paginationDTO);
+            var actorDTOs = mapper.Map<List<ActorDTO>>(actors);
+            return TypedResults.Ok(actorDTOs);
         }
 
-        static async Task<Results<Ok<Actor>, NotFound>> GetActorById(int id, IActorRepository repository)
+        [OutputCache(Duration = 60)]
+        static async Task<Results<Ok<ActorDTO>, NotFound>> GetActorById(int id, IActorRepository repository, IMapper mapper)
         {
             var actor = await repository.GetById(id);
             if (actor == null)
             {
                 return TypedResults.NotFound();
             }
-            return TypedResults.Ok(actor);
+            var actorDTO = mapper.Map<ActorDTO>(actor);
+            return TypedResults.Ok(actorDTO);
         }
 
-        static async Task<Results<Created<Actor>, NotFound>> CreateActores(CreateActorDTO createActorDTO, IActorRepository repository, IMapper mapper)
-        {
+        static async Task<Created<ActorDTO>> CreateActores([FromForm]CreateActorDTO createActorDTO,
+            IOutputCacheStore outputCacheStore ,IActorRepository repository, 
+            IMapper mapper, IFileStorage fileStorage)
+        { 
             var actor = mapper.Map<Actor>(createActorDTO);
+
+            if(createActorDTO.ProfilePicture is not null)
+            {
+                var url = await fileStorage.Store(container, createActorDTO.ProfilePicture);
+                actor.ProfilePicture = url;
+            }
             var id = await repository.Create(actor);
-            actor.Id = id;
-            return TypedResults.Created($"/Actor/{id}", actor);
+            await outputCacheStore.EvictByTagAsync("actors-get)", default);
+            var actorDTO = mapper.Map<ActorDTO>(actor);
+            return TypedResults.Created($"/Actor/{id}", actorDTO);
         }
 
-        static async Task<Results<Ok, NotFound>> UpdateActor(int id, CreateActorDTO updateActorDTO, IActorRepository repository, IMapper mapper)
+        static async Task<Results<NoContent, NotFound>> UpdateActor(int id,
+            [FromForm] CreateActorDTO createActorDTO, IActorRepository repository,
+            IFileStorage fileStorage, IOutputCacheStore outputCacheStore,
+            IMapper mapper)
         {
-            var exists = await repository.Exists(id);
-            if (!exists)
+            var actorDB = await repository.GetById(id);
+
+            if (actorDB is null)
             {
                 return TypedResults.NotFound();
             }
 
-            var actor = mapper.Map<Actor>(updateActorDTO);
-            actor.Id = id;
+            var actorForUpdate = mapper.Map<Actor>(createActorDTO);
+            actorForUpdate.Id = id;
+            actorForUpdate.ProfilePicture = actorDB.ProfilePicture;
 
-            await repository.Update(actor);
-            return TypedResults.Ok();
+            if (createActorDTO.ProfilePicture is not null)
+            {
+                var url = await fileStorage.Edit(actorForUpdate.ProfilePicture,
+                    container, createActorDTO.ProfilePicture);
+                actorForUpdate.ProfilePicture = url;
+            }
+
+            await repository.Update(actorForUpdate);
+            await outputCacheStore.EvictByTagAsync("actors-get", default);
+            return TypedResults.NoContent();
         }
 
-        static async Task<Results<Ok, NotFound>> DeleteActor(int id, IActorRepository repository)
+        static async Task<Results<NoContent, NotFound>> DeleteActor(int id,
+            IActorRepository repository, IOutputCacheStore outputCacheStore,
+            IFileStorage fileStorage)
         {
-            var exists = await repository.Exists(id);
-            if (!exists)
+            var actorDB = await repository.GetById(id);
+
+            if (actorDB is null)
             {
                 return TypedResults.NotFound();
             }
+
             await repository.Delete(id);
-            return TypedResults.Ok();
+            await fileStorage.Delete(actorDB.ProfilePicture, container);
+            await outputCacheStore.EvictByTagAsync("actors-get", default);
+            return TypedResults.NoContent();
+        }
+
+        //getbyname
+        public async static Task<Ok<List<ActorDTO>>> GetActorsByName(string name, IActorRepository repository, IMapper mapper)
+        {
+            var actors = await repository.GetByName(name);
+            var actorDTOs = mapper.Map<List<ActorDTO>>(actors);
+            return TypedResults.Ok(actorDTOs);
         }
     }
 }
