@@ -51,10 +51,30 @@ namespace MinimalApiMovies.Repositories
             using (var connection = new SqlConnection(connectionString))
             {
                 var Exists = await connection.QuerySingleAsync<bool>(
-                    @"Genre_IfExists", new { id },commandType:CommandType.StoredProcedure);
+                    @"Genre_IfExists", new { id }, commandType: CommandType.StoredProcedure);
                 return Exists;
             }
-        } 
+        }
+
+        public async Task<List<int>> Exists(List<int> ids)
+        {
+            var dt = new DataTable();
+            dt.Columns.Add("Id", typeof(int));
+
+            foreach (var genreId in ids)
+            {
+                dt.Rows.Add(genreId);
+            }
+
+            using (var connection = new SqlConnection(connectionString))
+            {
+                var idsOfGenresThatExists = await connection
+                    .QueryAsync<int>("Genres_GetbySeveralsIds", new { genresIds = dt },
+                    commandType: CommandType.StoredProcedure);
+
+                return idsOfGenresThatExists.ToList();
+            }
+        }
 
         public async Task<List<Genre>> GetAll()
         {

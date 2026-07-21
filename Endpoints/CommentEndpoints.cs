@@ -31,7 +31,7 @@ namespace MinimalApiMovies.Endpoints
             ICommentRepository commentsRepository, IMoviesRepository moviesRepository,
             IMapper mapper)
         {
-            if (!await moviesRepository.Exist(movieId))
+            if (!await moviesRepository.Exists(movieId))
             {
                 return TypedResults.NotFound();
             }
@@ -45,7 +45,7 @@ namespace MinimalApiMovies.Endpoints
             ICommentRepository commentsRepository, IMoviesRepository moviesRepository,
             IMapper mapper)
         {
-            if (!await moviesRepository.Exist(movieId))
+            if (!await moviesRepository.Exists(movieId))
             {
                 return TypedResults.NotFound();
             }
@@ -66,7 +66,7 @@ namespace MinimalApiMovies.Endpoints
             IMoviesRepository moviesRepository, IMapper mapper,
             IOutputCacheStore outputCacheStore)
         {
-            if (!await moviesRepository.Exist(movieId))
+            if (!await moviesRepository.Exists(movieId))
             {
                 return TypedResults.NotFound();
             }
@@ -84,7 +84,7 @@ namespace MinimalApiMovies.Endpoints
             ICommentRepository commentsRepository, IMoviesRepository moviesRepository,
             IMapper mapper)
         {
-            if (!await moviesRepository.Exist(movieId))
+            if (!await moviesRepository.Exists(movieId))
             {
                 return TypedResults.NotFound();
             }
@@ -107,7 +107,7 @@ namespace MinimalApiMovies.Endpoints
             ICommentRepository commentsRepository, IMoviesRepository moviesRepository,
             IOutputCacheStore outputCacheStore)
         {
-            if (!await moviesRepository.Exist(movieId))
+            if (!await moviesRepository.Exists(movieId))
             {
                 return TypedResults.NotFound();
             }

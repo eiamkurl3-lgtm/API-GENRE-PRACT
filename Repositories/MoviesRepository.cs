@@ -61,7 +61,7 @@ namespace MinimalAPIsMovies.Repositories
             }
         }
 
-        public async Task<bool> Exist(int id)
+        public async Task<bool> Exists(int id)
         {
             using (var connection = new SqlConnection(connectionString))
             {
@@ -92,14 +92,21 @@ namespace MinimalAPIsMovies.Repositories
             }
         }
 
-        //    public Task Assign(int id, List<int> genresIds)
-        //    {
-        //        throw new NotImplementedException();
-        //    }
+        public async Task Assign(int id, List<int> genresIds)
+        {
+            var dt = new DataTable();
+            dt.Columns.Add("Id", typeof(int));
 
-        //    public Task<bool> Exists(int id)
-        //    {
-        //        throw new NotImplementedException();
-        //    }
+            foreach (var genreId in genresIds)
+            {
+                dt.Rows.Add(genreId);
+            }
+
+            using (var connection = new SqlConnection(connectionString))
+            {
+                await connection.ExecuteAsync("Movies_AssignGenres",
+                    new { movieId = id, genresIds = dt });
+            }
+        }
     }
 }
