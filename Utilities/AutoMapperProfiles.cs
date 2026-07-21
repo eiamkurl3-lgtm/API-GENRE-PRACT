@@ -29,6 +29,8 @@ namespace MinimalApiMovies.Utilities
             // Comments mappings
             CreateMap<CreateCommentsDTO, Comments>();
             CreateMap<Comments, CommentsDTO>();
+
+            CreateMap<AssignActorMovieDTO, ActorMovie>();
         }
     }
 }
