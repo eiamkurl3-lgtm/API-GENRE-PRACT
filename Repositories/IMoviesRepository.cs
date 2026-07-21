@@ -12,7 +12,7 @@ namespace MinimalAPIsMovies.Repositories
         Task<bool> Exists(int id);
         //Task<bool> Exists(int id);
         Task<List<Movies>> GetAll(PaginationDTO paginationDTO);
-        Task<Movies?> GetbyId(int id);
+        Task<Movies?> GetById(int id);
         Task Update(Movies movie);
     }
 }

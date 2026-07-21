@@ -1,0 +1,12 @@
+﻿namespace MinimalApiMovies.DTOs
+{
+    public class ActorMovieDTO
+    {
+        public int Id { get; set; }
+
+        public string Name { get; set; } = null!;
+
+        public string character { get; set; } = null!;
+
+    }
+}

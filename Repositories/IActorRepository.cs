@@ -9,7 +9,7 @@ namespace MinimalApiMovies.Repositories
         Task<List<Actor>> GetAll(PaginationDTO pagination);
         Task<Actor?> GetById(int id);
 
-        Task<bool> Exists(int id);
+        Task<bool> Exists(int id, string v);
         Task Update(Actor actor);
         Task Delete(int id);
         Task<List<Actor>> GetByName(string name);

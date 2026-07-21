@@ -50,6 +50,21 @@ namespace MinimalApiMovies.Repositories
             return exists;
         }
 
+        public async Task<bool> Exists(int id, string name)
+        {
+            var parts = name.Split(' ', 2);
+            var firstName = parts.Length > 0 ? parts[0] : name;
+            var lastName = parts.Length > 1 ? parts[1] : string.Empty;
+
+            using var connection = new SqlConnection(connectionString);
+            var exists = await connection.QuerySingleAsync<bool>(
+                "Actor_IfExistsByName",
+                new { Id = id, FirstName = firstName, LastName = lastName },
+                commandType: CommandType.StoredProcedure
+            );
+            return exists;
+        }
+
         public async Task<List<Actor>> GetAll(PaginationDTO pagination)
         {
             using var connection = new SqlConnection(connectionString);

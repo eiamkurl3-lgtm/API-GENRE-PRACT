@@ -1,8 +1,9 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
+using MinimalApiMovies.DTOs;
+using MinimalApiMovies.Entities;
 using MinimalApiMovies.Entities;
 using MinimalAPIsMovies.DTOs;
-using MinimalApiMovies.Entities;
 using System.Data;
 using System.Xml.Linq;
 
@@ -50,14 +51,42 @@ namespace MinimalAPIsMovies.Repositories
             }
         }
 
-        public async Task<Movies?> GetbyId(int id)
+        public async Task<Movies?> GetById(int id)
         {
             using (var connection = new SqlConnection(connectionString))
             {
-                var movie = await connection.QueryFirstOrDefaultAsync<Movies>("Movies_GetById",
-                    new { id },
-                    commandType: CommandType.StoredProcedure);
-                return movie;
+                using (var multi = await
+                    connection.QueryMultipleAsync("Movies_GetById", new { id }))
+                {
+
+                    var movie = await multi.ReadFirstAsync<Movies>();
+                    var comments = await multi.ReadAsync<Comments>();
+                    var genres = await multi.ReadAsync<Genre>();
+                    var actors = await multi.ReadAsync<ActorMovieDTO>();
+
+                    movie.Comments = comments.ToList();
+
+                    foreach (var genre in genres)
+                    {
+                        movie.GenresMovies.Add(new GenreMovie
+                        {
+                            GenreId = genre.Id,
+                            genre = genre
+                        });
+                    }
+
+                    foreach (var actor in actors)
+                    {
+                        movie.ActorsMovies.Add(new ActorMovie
+                        {
+                            ActorId = actor.Id,
+                            Character = actor.character,
+                            Actor = new Actor { FirstName = actor.Name } // use a writable property
+                        });
+                    }
+
+                    return movie;
+                }
             }
         }
 

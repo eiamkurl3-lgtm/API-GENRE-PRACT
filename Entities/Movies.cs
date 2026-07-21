@@ -13,5 +13,10 @@
         public string? Poster { get; set; }
 
         public List<Comments> Comments { get; set; } = new List<Comments>();
+
+        public List<GenreMovie> GenresMovies { get; set; } = new List<GenreMovie>();
+        public List<ActorMovie> ActorsMovies { get; set; } = new List<ActorMovie>();
+
+
     }
 }

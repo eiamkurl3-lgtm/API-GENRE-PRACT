@@ -1,3 +1,4 @@
+
 namespace MinimalApiMovies.DTOs
 {
     public class MoviesDTO
@@ -11,5 +12,11 @@ namespace MinimalApiMovies.DTOs
         public DateTime ReleaseDate { get; set; }
 
         public string? Poster { get; set; }
+
+        public List<CommentsDTO> Comments { get; set; } = new List<CommentsDTO>();
+        public List<GenreDTO> Genres { get; set; } = new List<GenreDTO>();
+        public List<ActorMovieDTO> Actors { get; set; } = new List<ActorMovieDTO>();
+
+
     }
 }

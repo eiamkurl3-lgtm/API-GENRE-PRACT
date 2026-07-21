@@ -1,4 +1,5 @@
 using AutoMapper;
+using FluentValidation;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
@@ -7,6 +8,7 @@ using MinimalApiMovies.Entities;
 using MinimalApiMovies.Repositories;
 using MinimalApiMovies.Services;
 using MinimalAPIsMovies.DTOs;
+using System.ComponentModel.DataAnnotations;
 
 namespace MinimalApiMovies.Endpoints
 {
@@ -45,10 +47,18 @@ namespace MinimalApiMovies.Endpoints
             return TypedResults.Ok(actorDTO);
         }
 
-        static async Task<Created<ActorDTO>> CreateActores([FromForm]CreateActorDTO createActorDTO,
+        static async Task<Results<Created<ActorDTO>, ValidationProblem>> CreateActores([FromForm] CreateActorDTO createActorDTO,
             IOutputCacheStore outputCacheStore ,IActorRepository repository, 
-            IMapper mapper, IFileStorage fileStorage)
-        { 
+            IMapper mapper, IFileStorage fileStorage,IValidator<CreateActorDTO> validator)
+        {
+            var validationResult = await validator.ValidateAsync(createActorDTO);
+
+            if (!validationResult.IsValid)
+            {
+                return TypedResults.ValidationProblem(validationResult.ToDictionary());
+            }
+
+
             var actor = mapper.Map<Actor>(createActorDTO);
 
             if(createActorDTO.ProfilePicture is not null)

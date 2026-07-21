@@ -1,3 +1,4 @@
+using FluentValidation;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.OutputCaching;
@@ -18,6 +19,7 @@ builder.Services.AddScoped<IMoviesRepository, MoviesRepository>();
 builder.Services.AddScoped<ICommentRepository, CommentRepository>();
 builder.Services.AddTransient<IFileStorage, LocalFileStorage>();
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
 builder.Services.AddAutoMapper(typeof(Program));
 

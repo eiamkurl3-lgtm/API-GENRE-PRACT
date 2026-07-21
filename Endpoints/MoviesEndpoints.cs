@@ -18,7 +18,8 @@ namespace MinimalApiMovies.Endpoints
         public static RouteGroupBuilder MapMoviesEndpoints(this RouteGroupBuilder group)
         {
             group.MapGet("/", GetAllMovies).CacheOutput(c => c.Expire(TimeSpan.FromSeconds(60)).Tag("movies-get"));
-            group.MapGet("/{id:int}", GetMovieById);
+            //group.MapGet("/{id:int}", GetById);
+             group.MapGet("/{id:int}", GetById);
             group.MapPost("/", CreateMovie).DisableAntiforgery();
             group.MapPut("/{id:int}", UpdateMovie).DisableAntiforgery();
             group.MapDelete("/{id:int}", DeleteMovie);
@@ -37,9 +38,9 @@ namespace MinimalApiMovies.Endpoints
         }
 
         [OutputCache(Duration = 60)]
-        static async Task<Results<Ok<MoviesDTO>, NotFound>> GetMovieById(int id, IMoviesRepository repository, IMapper mapper)
+        static async Task<Results<Ok<MoviesDTO>, NotFound>> GetById(int id, IMoviesRepository repository, IMapper mapper)
         {
-            var movie = await repository.GetbyId(id);
+            var movie = await repository.GetById(id);
             if (movie == null)
             {
                 return TypedResults.NotFound();
@@ -71,7 +72,7 @@ namespace MinimalApiMovies.Endpoints
             IFileStorage fileStorage, IOutputCacheStore outputCacheStore,
             IMapper mapper)
         {
-            var movieDB = await repository.GetbyId(id);
+            var movieDB = await repository.GetById(id);
 
             if (movieDB is null)
             {
@@ -98,7 +99,7 @@ namespace MinimalApiMovies.Endpoints
             IMoviesRepository repository, IOutputCacheStore outputCacheStore,
             IFileStorage fileStorage)
         {
-            var movieDB = await repository.GetbyId(id);
+            var movieDB = await repository.GetById(id);
 
             if (movieDB is null)
             {
