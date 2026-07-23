@@ -1,25 +1,59 @@
 using FluentValidation;
 using Microsoft.AspNetCore.Cors;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.OutputCaching;
+using Microsoft.IdentityModel.Tokens;
 using MinimalApiMovies.Endpoints;
 using MinimalApiMovies.Entities;
 using MinimalApiMovies.Repositories;
 using MinimalApiMovies.Services;
+using MinimalApiMovies.Utilities;
 using MinimalAPIsMovies.Repositories;
 
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Services zone - BEGIN
+
+
+builder.Services.AddTransient<IUserStore<IdentityUser>, UserStore>();
+builder.Services.AddIdentityCore<IdentityUser>();
+builder.Services.AddTransient<SignInManager<IdentityUser>>();
+
+
 builder.Services.AddScoped<IGenreRepository, GenreRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IActorRepository, ActorRepository>();
 builder.Services.AddScoped<IMoviesRepository, MoviesRepository>();
 builder.Services.AddScoped<ICommentRepository, CommentRepository>();
 builder.Services.AddTransient<IFileStorage, LocalFileStorage>();
+builder.Services.AddScoped<IErrorsRepository, ErrorsRepository>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+builder.Services.AddProblemDetails();
+
+
+builder.Services.AddAuthentication().AddJwtBearer(options =>
+{
+    options.MapInboundClaims = false;
+
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = false,
+        ValidateAudience = false,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ClockSkew = TimeSpan.Zero,
+        IssuerSigningKeys = KeysHandler.GetAllKeys(builder.Configuration),
+        //IssuerSigningKey = KeysHandler.GetKey(builder.Configuration).First() 
+    };
+});
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("isadmin", policy => policy.RequireClaim("isadmin"));
+});
 
 builder.Services.AddAutoMapper(typeof(Program));
 
@@ -50,6 +84,8 @@ var app = builder.Build();
 
 // Middlewares zone - BEGIN
 
+
+
 //if (builder.Environment.IsDevelopment())
 //{
 
@@ -59,9 +95,34 @@ app.UseStaticFiles();
 app.UseSwagger();
 app.UseSwaggerUI();
 
+app.UseExceptionHandler(exceptionHandlerApp => exceptionHandlerApp.Run(async context =>
+{
+    var exceptionHandlerFeature = context.Features.Get<IExceptionHandlerFeature>();
+    var exception = exceptionHandlerFeature?.Error!;
+
+    var error = new Error();
+    error.Date = DateTime.UtcNow;
+    error.ErrorMessage = exception.Message;
+    error.StackTrace = exception.StackTrace;
+
+    var repository = context.RequestServices.GetRequiredService<IErrorsRepository>();
+    await repository.Create(error);
+
+    await Results.BadRequest(new
+    {
+        type = "error",
+        message = "an unexpected exception has occurred",
+        status = 500
+    }).ExecuteAsync(context);
+}));
+
+
+app.UseStatusCodePages();
 app.UseCors();
 
 app.UseOutputCache();
+
+app.UseAuthorization();
 
 app.MapGroup("/Genre").MapGenreEndpoints();
 
@@ -70,6 +131,12 @@ app.MapGroup("/User").MapUsersEndpoints();
 app.MapGroup("/Actor").MapActorEndpoints();
 
 app.MapGroup("/Movies").MapMoviesEndpoints();
+
+app.MapGet("/error", () =>
+{
+    throw new InvalidOperationException("example error");
+});
+
 
 app.MapGroup("/movie/{movieId:int}Comment").MapCommentEndpoints();
 

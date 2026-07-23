@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
 using MinimalApiMovies.DTOs;
 using MinimalApiMovies.Entities;
+using MinimalApiMovies.Fitlers;
 using MinimalApiMovies.Repositories;
 using MinimalApiMovies.Services;
 using MinimalAPIsMovies.DTOs;
@@ -19,8 +20,8 @@ namespace MinimalApiMovies.Endpoints
         {
             group.MapGet("/", GetAllActors);
             group.MapGet("/{id:int}", GetActorById);
-            group.MapPost("/", CreateActores).DisableAntiforgery();
-            group.MapPut("/{id:int}", UpdateActor).DisableAntiforgery();
+            group.MapPost("/", CreateActores).DisableAntiforgery().AddEndpointFilter<ValidationFilter<CreateActorDTO>>();
+            group.MapPut("/{id:int}", UpdateActor).DisableAntiforgery().AddEndpointFilter<ValidationFilter<CreateActorDTO>>();
             group.MapDelete("/{id:int}", DeleteActor);
             group.MapGet("/search/{name}", GetActorsByName);
             return group;
@@ -47,18 +48,10 @@ namespace MinimalApiMovies.Endpoints
             return TypedResults.Ok(actorDTO);
         }
 
-        static async Task<Results<Created<ActorDTO>, ValidationProblem>> CreateActores([FromForm] CreateActorDTO createActorDTO,
+        static async Task<Created<ActorDTO>> CreateActores([FromForm] CreateActorDTO createActorDTO,
             IOutputCacheStore outputCacheStore ,IActorRepository repository, 
-            IMapper mapper, IFileStorage fileStorage,IValidator<CreateActorDTO> validator)
+            IMapper mapper, IFileStorage fileStorage)
         {
-            var validationResult = await validator.ValidateAsync(createActorDTO);
-
-            if (!validationResult.IsValid)
-            {
-                return TypedResults.ValidationProblem(validationResult.ToDictionary());
-            }
-
-
             var actor = mapper.Map<Actor>(createActorDTO);
 
             if(createActorDTO.ProfilePicture is not null)

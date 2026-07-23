@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Data.SqlClient;
 using MinimalApiMovies.Entities;
 using System.Data;
@@ -14,28 +15,34 @@ namespace MinimalApiMovies.Repositories
             connectionString = configuration.GetConnectionString("DefaultConnection")!;
         }
 
-        public async Task<int> Create(User user)
+        public async Task<IdentityUser?> GetByEmail(string normalizedEmail)
         {
-            using var connection = new SqlConnection(connectionString);
+            using (var connection = new SqlConnection(connectionString))
+            {
+                return await connection
+                    .QuerySingleOrDefaultAsync<IdentityUser>("Users_GetByEmail", new { normalizedEmail },
+                    commandType: CommandType.StoredProcedure);
+            }
+        }
 
-            var id = await connection.QuerySingleAsync<int>(
-                "Create_User",
-                new
-                {
-                    user.FirstName,
-                    user.LastName,
-                    user.Age,
-                    user.Name,
-                    user.Gender,
-                    user.IsActive,
-                    user.PhoneNumber,
-                    user.Email
-                },
-                commandType: CommandType.StoredProcedure
-            );
+        public async Task<string> Create(IdentityUser user)
+        {
+            using (var connection = new SqlConnection(connectionString))
+            {
+                user.Id = Guid.NewGuid().ToString();
+                await connection.ExecuteAsync("Create_User",
+                    new
+                    {
+                        user.Id,
+                        user.Email,
+                        user.NormalizedEmail,
+                        user.UserName,
+                        user.NormalizedUserName,
+                        user.PasswordHash
+                    }, commandType: CommandType.StoredProcedure);
 
-            user.Id = id;
-            return id;
+                return user.Id;
+            }
         }
 
         public async Task Delete(int id)
