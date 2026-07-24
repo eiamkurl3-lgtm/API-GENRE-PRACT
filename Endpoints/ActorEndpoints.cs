@@ -20,9 +20,9 @@ namespace MinimalApiMovies.Endpoints
         {
             group.MapGet("/", GetAllActors);
             group.MapGet("/{id:int}", GetActorById);
-            group.MapPost("/", CreateActores).DisableAntiforgery().AddEndpointFilter<ValidationFilter<CreateActorDTO>>();
-            group.MapPut("/{id:int}", UpdateActor).DisableAntiforgery().AddEndpointFilter<ValidationFilter<CreateActorDTO>>();
-            group.MapDelete("/{id:int}", DeleteActor);
+            group.MapPost("/", CreateActores).RequireAuthorization("isadmin").DisableAntiforgery().AddEndpointFilter<ValidationFilter<CreateActorDTO>>();
+            group.MapPut("/{id:int}", UpdateActor).RequireAuthorization("isadmin").DisableAntiforgery().AddEndpointFilter<ValidationFilter<CreateActorDTO>>();
+            group.MapDelete("/{id:int}", DeleteActor).RequireAuthorization("isadmin");
             group.MapGet("/search/{name}", GetActorsByName);
             return group;
         }

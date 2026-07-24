@@ -31,6 +31,8 @@ builder.Services.AddScoped<ICommentRepository, CommentRepository>();
 builder.Services.AddTransient<IFileStorage, LocalFileStorage>();
 builder.Services.AddScoped<IErrorsRepository, ErrorsRepository>();
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddTransient<IUsersService, UsersService>();
+
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 builder.Services.AddProblemDetails();
 

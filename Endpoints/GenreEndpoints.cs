@@ -15,9 +15,9 @@ namespace MinimalApiMovies.Endpoints
         {
             group.MapGet("/", GetAllGenres).RequireAuthorization();
             group.MapGet("/{id:int}", GetGenreById);
-            group.MapPost("/", CreateGenre).AddEndpointFilter<ValidationFilter<CreateGenreDTO>>();
-            group.MapPut("/{id:int}", UpdateGenre).AddEndpointFilter<ValidationFilter<CreateGenreDTO>>();
-            group.MapDelete("/{id:int}", DeleteGenre);
+            group.MapPost("/", CreateGenre).RequireAuthorization("isadmin").AddEndpointFilter<ValidationFilter<CreateGenreDTO>>();
+            group.MapPut("/{id:int}", UpdateGenre).RequireAuthorization("isadmin").AddEndpointFilter<ValidationFilter<CreateGenreDTO>>();
+            group.MapDelete("/{id:int}", DeleteGenre).RequireAuthorization("isadmin");
             return group;
         }
 

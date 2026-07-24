@@ -25,7 +25,15 @@ namespace MinimalApiMovies.Endpoints
             //group.MapDelete("/{id:int}", DeleteUser);
 
 
-            group.MapPost("/", Register).AddEndpointFilter<ValidationFilter<UserCredentialsDTO>>();
+            group.MapPost("/register", Register).AddEndpointFilter<ValidationFilter<UserCredentialsDTO>>();
+            group.MapPost("/login", Login)
+                .AddEndpointFilter<ValidationFilter<UserCredentialsDTO>>();
+            group.MapPost("/MakeAdmin",MakeAdmin)
+                //.RequireAuthorization("isadmin")
+                .AddEndpointFilter<ValidationFilter<UserCredentialsDTO>>();
+            group.MapPost("/RemoveAdmin",RemoveAdmin)
+                //.RequireAuthorization("isadmin")
+                .AddEndpointFilter<ValidationFilter<UserCredentialsDTO>> ();
             return group;
         }
 
@@ -89,7 +97,62 @@ namespace MinimalApiMovies.Endpoints
             };
         }
 
-        static async Task
+        static async Task<Results<Ok<AuthenticationResponseDTO>, BadRequest<string>>> Login(
+            UserCredentialsDTO userCredentialsDTO,
+            [FromServices] SignInManager<IdentityUser> signInManager,
+            [FromServices] UserManager<IdentityUser> userManager,
+            IConfiguration configuration
+            )
+        {
+            var user = await userManager.FindByEmailAsync(userCredentialsDTO.Email);
+
+            if (user is null)
+            {
+                return TypedResults.BadRequest("There was a problem with the email or the password");
+            }
+
+            var results = await signInManager.CheckPasswordSignInAsync(user,
+                userCredentialsDTO.Password, lockoutOnFailure: false);
+
+            if (results.Succeeded)
+            {
+                var authenticationResponse =
+                   await BuildToken(userCredentialsDTO, configuration, userManager);
+                return TypedResults.Ok(authenticationResponse);
+            }
+            else
+            {
+                return TypedResults.BadRequest("There was a problem with the email or the password");
+            }
+        }
+
+        static async Task<Results<NoContent, NotFound>> MakeAdmin(EditClaimDTO editClaimDTO,
+            [FromServices] UserManager<IdentityUser> userManager)
+        {
+            var user = await userManager.FindByEmailAsync(editClaimDTO.Email);
+
+            if (user is null)
+            {
+                return TypedResults.NotFound();
+            }
+
+            await userManager.AddClaimAsync(user, new Claim("isadmin", "true"));
+            return TypedResults.NoContent();
+        }
+
+        static async Task<Results<NoContent, NotFound>> RemoveAdmin(EditClaimDTO editClaimDTO,
+           [FromServices] UserManager<IdentityUser> userManager)
+        {
+            var user = await userManager.FindByEmailAsync(editClaimDTO.Email);
+
+            if (user is null)
+            {
+                return TypedResults.NotFound();
+            }
+
+            await userManager.RemoveClaimAsync(user, new Claim("isadmin", "true"));
+            return TypedResults.NoContent();
+        }
 
         //static async Task<Ok<List<UserDTO>>> GetAllUsers(IUserRepository repository, IMapper mapper)
         //{
@@ -108,7 +171,7 @@ namespace MinimalApiMovies.Endpoints
         //    }
         //    var userDTO = mapper.Map<UserDTO>(user);
         //    return TypedResults.Ok(userDTO);
-        }
+    }
 
         //static async Task<Results<Created<UserDTO>, NotFound>> CreateUser(CreateUserDTO createUserDTO, IUserRepository repository, IMapper mapper)
         //{

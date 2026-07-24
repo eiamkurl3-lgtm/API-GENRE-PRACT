@@ -21,11 +21,11 @@ namespace MinimalApiMovies.Endpoints
             group.MapGet("/", GetAllMovies).CacheOutput(c => c.Expire(TimeSpan.FromSeconds(60)).Tag("movies-get"));
             //group.MapGet("/{id:int}", GetById);
              group.MapGet("/{id:int}", GetById);
-            group.MapPost("/", CreateMovie).DisableAntiforgery().AddEndpointFilter<ValidationFilter<CreateMoviesDTO>>();
-            group.MapPut("/{id:int}", UpdateMovie).DisableAntiforgery().AddEndpointFilter<ValidationFilter<CreateMoviesDTO>>();
-            group.MapDelete("/{id:int}", DeleteMovie);
-            group.MapPost("/{id:int}/assign-genres", AssignGenres);
-            group.MapPost("/{id:int}/assign-actors", AssignActors);
+            group.MapPost("/", CreateMovie).RequireAuthorization("isadmin").DisableAntiforgery().AddEndpointFilter<ValidationFilter<CreateMoviesDTO>>();
+            group.MapPut("/{id:int}", UpdateMovie).RequireAuthorization("isadmin").DisableAntiforgery().AddEndpointFilter<ValidationFilter<CreateMoviesDTO>>();
+            group.MapDelete("/{id:int}", DeleteMovie).RequireAuthorization("isadmin");
+            group.MapPost("/{id:int}/assign-genres", AssignGenres).RequireAuthorization("isadmin");
+            group.MapPost("/{id:int}/assign-actors", AssignActors).RequireAuthorization("isadmin");
             return group;
         }
 

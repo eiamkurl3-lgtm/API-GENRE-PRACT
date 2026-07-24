@@ -26,7 +26,8 @@ namespace MinimalApiMovies.Repositories
                 new
                 {
                     comment.Body,
-                    comment.MovieId
+                    comment.MovieId,
+                    comment.UserId
                 },
                 commandType: CommandType.StoredProcedure
             );

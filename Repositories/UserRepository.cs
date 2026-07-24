@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Data.SqlClient;
 using MinimalApiMovies.Entities;
 using System.Data;
+using System.Security.Claims;
 
 namespace MinimalApiMovies.Repositories
 {
@@ -42,6 +43,39 @@ namespace MinimalApiMovies.Repositories
                     }, commandType: CommandType.StoredProcedure);
 
                 return user.Id;
+            }
+        }
+
+        public async Task<IList<Claim>> GetClaims(IdentityUser user)
+        {
+            using (var connection = new SqlConnection(connectionString))
+            {
+                var claims = await connection.QueryAsync<Claim>("Users_GetClaims",
+                    new { user.Id }, commandType: CommandType.StoredProcedure);
+                return claims.ToList();
+            }
+        }
+
+        public async Task AssignClaims(IdentityUser user, IEnumerable<Claim> claims)
+        {
+            var sql = @"INSERT INTO UsersClaims (UserId, ClaimType, ClaimValue) 
+                                        VALUES (@Id, @Type, @Value)";
+            var parameters = claims.Select(x => new { user.Id, x.Type, x.Value });
+
+            using (var connection = new SqlConnection(connectionString))
+            {
+                await connection.ExecuteAsync(sql, parameters);
+            }
+        }
+
+        public async Task RemoveClaims(IdentityUser user, IEnumerable<Claim> claims)
+        {
+            var sql = "DELETE UsersClaims WHERE UserId = @Id AND ClaimType = @Type";
+            var parameters = claims.Select(x => new { user.Id, x.Type });
+
+            using (var connection = new SqlConnection(connectionString))
+            {
+                await connection.ExecuteAsync(sql, parameters);
             }
         }
 
