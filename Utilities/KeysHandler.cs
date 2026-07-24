@@ -4,7 +4,7 @@ namespace MinimalApiMovies.Utilities
 {
     public class KeysHandler
     {
-        public const string OurIssuer = "our-app";
+        public const string OurIssuer = "Our-App";
         private const string KeysSection = "Authentication:Schemes:Bearer:SigningKeys";
         private const string KeysSection_Issuer = "Issuer";
         private const string KeysSection_Value = "Value";

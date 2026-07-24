@@ -8,6 +8,10 @@ namespace MinimalApiMovies.Validations
         public static string MessageMaxLength = "Field {PropertyName} must be less than {MaxLength} Characters";
         public static string UpperCaseMessage = "firstletter must be uppercase {PropertyName}";
         //public static string ExistsMessage = "The field {PropertyName} already exists";
+        public static string InvalidEmailMessage = "A valid email address is required.";
+        public static string MinLengthMessage = "Field {PropertyName} must be at least {MinLength} Characters";
+        public static string EmailAddressMessage = "A valid {PropertyName} address is required.";
+
 
         public static string GreaterThanDate(DateTime value) => $"The field {nameof(CreateActorDTO.BirthDate)} must be greater than or equal to" + value.ToString("yyyyy-MM-dd"); 
 
