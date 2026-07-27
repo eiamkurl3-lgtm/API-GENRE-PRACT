@@ -8,6 +8,7 @@ using MinimalApiMovies.DTOs;
 using MinimalApiMovies.Entities;
 using MinimalApiMovies.Fitlers;
 using MinimalApiMovies.Repositories;
+using MinimalApiMovies.Services;
 using MinimalApiMovies.Utilities;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -23,17 +24,23 @@ namespace MinimalApiMovies.Endpoints
             //group.MapPost("/", CreateUser);
             //group.MapPut("/{id:int}", UpdateUser);
             //group.MapDelete("/{id:int}", DeleteUser);
-
+                
 
             group.MapPost("/register", Register).AddEndpointFilter<ValidationFilter<UserCredentialsDTO>>();
+
             group.MapPost("/login", Login)
                 .AddEndpointFilter<ValidationFilter<UserCredentialsDTO>>();
+
             group.MapPost("/MakeAdmin",MakeAdmin)
-                //.RequireAuthorization("isadmin")
-                .AddEndpointFilter<ValidationFilter<UserCredentialsDTO>>();
+                .RequireAuthorization("isadmin")
+                .AddEndpointFilter<ValidationFilter<EditClaimDTO>>();
+
             group.MapPost("/RemoveAdmin",RemoveAdmin)
-                //.RequireAuthorization("isadmin")
-                .AddEndpointFilter<ValidationFilter<UserCredentialsDTO>> ();
+                .RequireAuthorization("isadmin")
+                .AddEndpointFilter<ValidationFilter<EditClaimDTO>> ();
+
+
+            group.MapGet("/renewtoken", Renew).RequireAuthorization();
             return group;
         }
 
@@ -73,10 +80,10 @@ namespace MinimalApiMovies.Endpoints
                 new Claim("Whatever I want", "this is a value")
             };
 
-            //var user = await userManager.FindByNameAsync(userCredentialsDTO.Email);
-            //var claimsFromDB = await userManager.GetClaimsAsync(user!);
+            var user = await userManager.FindByNameAsync(userCredentialsDTO.Email);
+            var claimsFromDB = await userManager.GetClaimsAsync(user!);
 
-            //claims.AddRange(claimsFromDB);
+            claims.AddRange(claimsFromDB);
 
             var key = KeysHandler.GetKey(configuration).First();
             var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -152,6 +159,22 @@ namespace MinimalApiMovies.Endpoints
 
             await userManager.RemoveClaimAsync(user, new Claim("isadmin", "true"));
             return TypedResults.NoContent();
+        }
+
+        private static async Task<Results<NotFound, Ok<AuthenticationResponseDTO>>> Renew(
+           IUsersService usersService, IConfiguration configuration,
+           [FromServices] UserManager<IdentityUser> userManager)
+        {
+            var user = await usersService.GetUser();
+
+            if (user is null)
+            {
+                return TypedResults.NotFound();
+            }
+
+            var usersCredential = new UserCredentialsDTO { Email = user.Email! };
+            var response = await BuildToken(usersCredential, configuration, userManager);
+            return TypedResults.Ok(response);
         }
 
         //static async Task<Ok<List<UserDTO>>> GetAllUsers(IUserRepository repository, IMapper mapper)

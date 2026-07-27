@@ -34,6 +34,7 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddTransient<IUsersService, UsersService>();
 
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+
 builder.Services.AddProblemDetails();
 
 
@@ -54,7 +55,7 @@ builder.Services.AddAuthentication().AddJwtBearer(options =>
 });
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy("isadmin", policy => policy.RequireClaim("isadmin"));
+    options.AddPolicy("isadmin", policy => policy.RequireClaim("isadmin "));
 });
 
 builder.Services.AddAutoMapper(typeof(Program));

@@ -22,31 +22,47 @@ namespace MinimalApiMovies.Endpoints
         }
 
         [OutputCache(Duration = 60)]
-        static async Task<Ok<List<GenreDTO>>> GetAllGenres(IGenreRepository repository, IMapper mapper)
+        static async Task<Ok<List<GenreDTO>>> GetAllGenres(IGenreRepository repository, IMapper mapper,ILoggerFactory loggerFactory)
         {
+
+
+            var type = typeof(GenreEndpoints);
+            var logger = loggerFactory.CreateLogger(type.FullName!);
+
+
+            logger.LogTrace("This is a trace message");
+            logger.LogDebug("This is a debug message");
+            logger.LogInformation("This is a information message");
+            logger.LogWarning("This is a warning message");
+            logger.LogError("This is a error message");
+            logger.LogCritical("This is a critical message");
+            //logger.LogInformation("Getting the list of genres");
+
             var genres = await repository.GetAll();
             var genreDTOs = mapper.Map<List<GenreDTO>>(genres);
             return TypedResults.Ok(genreDTOs);
         }
 
         [OutputCache(Duration = 60)]
-        static async Task<Results<Ok<GenreDTO>, NotFound>> GetGenreById(int id, IGenreRepository repository, IMapper mapper)
+        static async Task<Results<Ok<GenreDTO>, NotFound>> GetGenreById(
+            [AsParameters] GetGenreByIdRequestDTO model)
         {
-            var genre = await repository.GetById(id);
+            var genre = await model.Repository.GetById(model.id);
             if (genre == null)
             {
                 return TypedResults.NotFound();
             }
-            var genreDTO = mapper.Map<GenreDTO>(genre);
+            var genreDTO = model.Mapper.Map<GenreDTO>(genre);
             return TypedResults.Ok(genreDTO);
-        }
+        }   
 
-        static async Task<Created<GenreDTO>> CreateGenre(CreateGenreDTO createGenreDTO, IGenreRepository repository, IMapper mapper)
+        static async Task<Results<Created<GenreDTO>,ValidationProblem >>CreateGenre(CreateGenreDTO createGenreDTO,
+            [AsParameters] CreateGenreRequestDTO model)
         {
-            var genre = mapper.Map<Genre>(createGenreDTO);
-            var id = await repository.Create(genre);
+            var genre = model.Mapper.Map<Genre>(createGenreDTO);
+            var id = await model.GenresRepository.Create(genre);
             genre.Id = id;
-            var genreDTO = mapper.Map<GenreDTO>(genre);
+            var genreDTO = model.Mapper.Map<GenreDTO>(genre);
             return TypedResults.Created($"/Genre/{id}", genreDTO);
         }
 
