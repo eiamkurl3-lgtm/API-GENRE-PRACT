@@ -18,8 +18,9 @@ namespace MinimalApiMovies.Endpoints
         public static RouteGroupBuilder MapCommentEndpoints(this RouteGroupBuilder  group)
         {
             group.MapGet("/", GetAll)
-              .CacheOutput(c => c.Expire(TimeSpan.FromSeconds(60)).Tag("comments-get"));
-            group.MapGet("/{id:int}", GetById).WithName("GetCommentById");
+              .CacheOutput(c => c.Expire(TimeSpan.FromSeconds(60)).Tag("comments-get")).AddEndpointFilter(new ClientCacheFilter(30));
+            group.MapGet("/{id:int}", GetById).WithName("GetCommentById")
+              .CacheOutput(c => c.Expire(TimeSpan.FromSeconds(60)).Tag("comments-get")).AddEndpointFilter(new ClientCacheFilter(30));
             group.MapPost("/", Create).RequireAuthorization().AddEndpointFilter<ValidationFilter<CreateCommentsDTO>>();
 
             group.MapPut("/{id:int}", Update).RequireAuthorization().AddEndpointFilter<ValidationFilter<CreateCommentsDTO>>();

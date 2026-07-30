@@ -18,9 +18,9 @@ namespace MinimalApiMovies.Endpoints
 
         public static RouteGroupBuilder MapMoviesEndpoints(this RouteGroupBuilder group)
         {
-            group.MapGet("/", GetAllMovies).CacheOutput(c => c.Expire(TimeSpan.FromSeconds(60)).Tag("movies-get"));
+            group.MapGet("/", GetAllMovies).CacheOutput(c => c.Expire(TimeSpan.FromSeconds(60)).Tag("movies-get")).AddEndpointFilter(new ClientCacheFilter(30));
             //group.MapGet("/{id:int}", GetById);
-             group.MapGet("/{id:int}", GetById);
+             group.MapGet("/{id:int}", GetById).CacheOutput(c => c.Expire(TimeSpan.FromSeconds(60)).Tag("movies-get")).AddEndpointFilter(new ClientCacheFilter(30));
             group.MapPost("/", CreateMovie).RequireAuthorization("isadmin").DisableAntiforgery().AddEndpointFilter<ValidationFilter<CreateMoviesDTO>>();
             group.MapPut("/{id:int}", UpdateMovie).RequireAuthorization("isadmin").DisableAntiforgery().AddEndpointFilter<ValidationFilter<CreateMoviesDTO>>();
             group.MapDelete("/{id:int}", DeleteMovie).RequireAuthorization("isadmin");
@@ -29,7 +29,6 @@ namespace MinimalApiMovies.Endpoints
             return group;
         }
 
-        [OutputCache(Duration = 60)]
         static async Task<Ok<List<MoviesDTO>>> GetAllMovies(IMoviesRepository repository, IMapper mapper, int page = 1, int recordsPerPage = 10)
         {
             var paginationDTO = new PaginationDTO() { Page = page, RecordsPerPage = recordsPerPage };
@@ -38,7 +37,6 @@ namespace MinimalApiMovies.Endpoints
             return TypedResults.Ok(moviesDTOs);
         }
 
-        [OutputCache(Duration = 60)]
         static async Task<Results<Ok<MoviesDTO>, NotFound>> GetById(int id, IMoviesRepository repository, IMapper mapper)
         {
             var movie = await repository.GetById(id);

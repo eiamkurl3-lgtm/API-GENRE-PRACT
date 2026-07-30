@@ -13,15 +13,14 @@ namespace MinimalApiMovies.Endpoints
     {
         public static async Task<RouteGroupBuilder> MapGenreEndpoints(this RouteGroupBuilder group)
         {
-            group.MapGet("/", GetAllGenres).RequireAuthorization();
-            group.MapGet("/{id:int}", GetGenreById);
+            group.MapGet("/", GetAllGenres).RequireAuthorization().CacheOutput(c => c.Expire(TimeSpan.FromSeconds(60)).Tag("genres-get")).AddEndpointFilter(new ClientCacheFilter(30));
+            group.MapGet("/{id:int}", GetGenreById).CacheOutput(c => c.Expire(TimeSpan.FromSeconds(60)).Tag("genres-get")).AddEndpointFilter(new ClientCacheFilter(30));
             group.MapPost("/", CreateGenre).RequireAuthorization("isadmin").AddEndpointFilter<ValidationFilter<CreateGenreDTO>>();
             group.MapPut("/{id:int}", UpdateGenre).RequireAuthorization("isadmin").AddEndpointFilter<ValidationFilter<CreateGenreDTO>>();
             group.MapDelete("/{id:int}", DeleteGenre).RequireAuthorization("isadmin");
             return group;
         }
 
-        [OutputCache(Duration = 60)]
         static async Task<Ok<List<GenreDTO>>> GetAllGenres(IGenreRepository repository, IMapper mapper,ILoggerFactory loggerFactory)
         {
 
@@ -43,7 +42,6 @@ namespace MinimalApiMovies.Endpoints
             return TypedResults.Ok(genreDTOs);
         }
 
-        [OutputCache(Duration = 60)]
         static async Task<Results<Ok<GenreDTO>, NotFound>> GetGenreById(
             [AsParameters] GetGenreByIdRequestDTO model)
         {
@@ -61,13 +59,14 @@ namespace MinimalApiMovies.Endpoints
         {
             var genre = model.Mapper.Map<Genre>(createGenreDTO);
             var id = await model.GenresRepository.Create(genre);
+            await model.OutputCacheStore.EvictByTagAsync("genres-get", default);
             genre.Id = id;
             var genreDTO = model.Mapper.Map<GenreDTO>(genre);
             return TypedResults.Created($"/Genre/{id}", genreDTO);
         }
 
         static async Task<Results<Ok, NotFound>> UpdateGenre(int id, CreateGenreDTO createGenreDTO,
-            IGenreRepository repository, IMapper mapper,IValidator<CreateGenreDTO> validator)
+            IGenreRepository repository, IMapper mapper, IOutputCacheStore outputCacheStore, IValidator<CreateGenreDTO> validator)
         {
             var exists = await repository.Exists(id);
             if (!exists)
@@ -79,10 +78,11 @@ namespace MinimalApiMovies.Endpoints
             genre.Id = id;
 
             await repository.Update(genre);
+            await outputCacheStore.EvictByTagAsync("genres-get", default);
             return TypedResults.Ok();
         }
 
-        static async Task<Results<Ok, NotFound>> DeleteGenre(int id, IGenreRepository repository)
+        static async Task<Results<Ok, NotFound>> DeleteGenre(int id, IGenreRepository repository, IOutputCacheStore outputCacheStore)
         {
             var exists = await repository.Exists(id);
             if (!exists)
@@ -90,6 +90,7 @@ namespace MinimalApiMovies.Endpoints
                 return TypedResults.NotFound();
             }
             await repository.Delete(id);
+            await outputCacheStore.EvictByTagAsync("genres-get", default);
             return TypedResults.Ok();
         }
     }

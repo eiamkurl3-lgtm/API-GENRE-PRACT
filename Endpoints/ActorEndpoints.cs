@@ -18,16 +18,15 @@ namespace MinimalApiMovies.Endpoints
         private readonly static string container = "actors";
         public static RouteGroupBuilder MapActorEndpoints(this RouteGroupBuilder group)
         {
-            group.MapGet("/", GetAllActors);
-            group.MapGet("/{id:int}", GetActorById);
+            group.MapGet("/", GetAllActors).CacheOutput(c => c.Expire(TimeSpan.FromSeconds(60)).Tag("actors-get")).AddEndpointFilter(new ClientCacheFilter(30));
+            group.MapGet("/{id:int}", GetActorById).CacheOutput(c => c.Expire(TimeSpan.FromSeconds(60)).Tag("actors-get")).AddEndpointFilter(new ClientCacheFilter(30));
             group.MapPost("/", CreateActores).RequireAuthorization("isadmin").DisableAntiforgery().AddEndpointFilter<ValidationFilter<CreateActorDTO>>();
             group.MapPut("/{id:int}", UpdateActor).RequireAuthorization("isadmin").DisableAntiforgery().AddEndpointFilter<ValidationFilter<CreateActorDTO>>();
             group.MapDelete("/{id:int}", DeleteActor).RequireAuthorization("isadmin");
-            group.MapGet("/search/{name}", GetActorsByName);
+            group.MapGet("/search/{name}", GetActorsByName).CacheOutput(c => c.Expire(TimeSpan.FromSeconds(60)).Tag("actors-get")).AddEndpointFilter(new ClientCacheFilter(15));
             return group;
         }
 
-        [OutputCache(Duration = 60)]
         static async Task<Ok<List<ActorDTO>>> GetAllActors(IActorRepository repository, IMapper mapper,
          PaginationDTO pagination)
         {
@@ -36,7 +35,6 @@ namespace MinimalApiMovies.Endpoints
             return TypedResults.Ok(actorDTOs);
         }
 
-        [OutputCache(Duration = 60)]
         static async Task<Results<Ok<ActorDTO>, NotFound>> GetActorById(int id, IActorRepository repository, IMapper mapper)
         {
             var actor = await repository.GetById(id);
@@ -60,7 +58,7 @@ namespace MinimalApiMovies.Endpoints
                 actor.ProfilePicture = url;
             }
             var id = await repository.Create(actor);
-            await outputCacheStore.EvictByTagAsync("actors-get)", default);
+            await outputCacheStore.EvictByTagAsync("actors-get", default);
             var actorDTO = mapper.Map<ActorDTO>(actor);
             return TypedResults.Created($"/Actor/{id}", actorDTO);
         }
