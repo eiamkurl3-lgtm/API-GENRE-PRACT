@@ -30,6 +30,7 @@ builder.Services.AddScoped<IMoviesRepository, MoviesRepository>();
 builder.Services.AddScoped<ICommentRepository, CommentRepository>();
 builder.Services.AddTransient<IFileStorage, LocalFileStorage>();
 builder.Services.AddScoped<IErrorsRepository, ErrorsRepository>();
+builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddTransient<IUsersService, UsersService>();
 
@@ -55,7 +56,7 @@ builder.Services.AddAuthentication().AddJwtBearer(options =>
 });
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy("isadmin", policy => policy.RequireClaim("isadmin "));
+    options.AddPolicy("isadmin", policy => policy.RequireClaim("isadmin"));
 });
 
 builder.Services.AddAutoMapper(typeof(Program));
